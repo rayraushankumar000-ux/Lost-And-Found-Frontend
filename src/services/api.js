@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const API = axios.create({
-  baseURL: 'http://localhost:5000/api', // Backend port
+  baseURL: 'https://lost-and-found-backend-1-igk1.onrender.com' // Backend port
 });
 
 // Your React app: http://localhost:3001

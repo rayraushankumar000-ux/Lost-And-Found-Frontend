@@ -1,0 +1,103 @@
+.report-found {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.report-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.report-header h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.report-header p {
+  color: var(--text-secondary);
+  font-size: 1.125rem;
+}
+
+.found-tips {
+  margin-top: 40px;
+  padding: 30px;
+  background: linear-gradient(135deg, #dbeafe, #3b82f6);
+  border-radius: 12px;
+  color: white;
+}
+
+.found-tips h3 {
+  margin: 0 0 20px 0;
+  text-align: center;
+  font-size: 1.5rem;
+}
+
+.tips-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.tip-card {
+  text-align: center;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  backdrop-filter: blur(10px);
+}
+
+.tip-icon {
+  font-size: 2rem;
+  margin-bottom: 12px;
+}
+
+.tip-card p {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+/* Reuse styles from ReportLost.css for consistency */
+.report-progress,
+.report-form,
+.form-step,
+.form-group,
+.form-row,
+.form-label,
+.form-input,
+.form-textarea,
+.upload-area,
+.file-input,
+.upload-placeholder,
+.upload-icon,
+.upload-hint,
+.upload-preview,
+.radio-group,
+.radio-label,
+.radio-custom,
+.form-actions,
+.spinner {
+  /* All these styles are the same as in ReportLost.css */
+}
+
+/* Media queries for responsive design */
+@media (max-width: 768px) {
+  .report-found {
+    padding: 16px;
+  }
+
+  .report-header h1 {
+    font-size: 2rem;
+  }
+
+  .tips-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .found-tips {
+    padding: 20px;
+  }
+}

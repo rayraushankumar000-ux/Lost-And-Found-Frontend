@@ -1,0 +1,49 @@
+{
+  "nav.home": "Home",
+  "nav.dashboard": "Dashboard",
+  "nav.report_lost": "Report Lost",
+  "nav.report_found": "Report Found",
+  "nav.search": "Search",
+  "nav.about": "About",
+  "nav.contact": "Contact",
+  
+  "hero.title": "Lost Something?",
+  "hero.subtitle": "We'll Help Find It",
+  "hero.description": "Our advanced lost and found platform uses community power and smart technology to reunite you with your precious belongings. Fast, secure, and reliable.",
+  
+  "auth.login": "Login",
+  "auth.logout": "Logout",
+  "auth.signup": "Sign Up",
+  "auth.welcome": "Welcome back, {{name}}!",
+  
+  "items.report_lost": "Report Lost Item",
+  "items.report_found": "Report Found Item",
+  "items.search": "Search Items",
+  "items.category": "Category",
+  "items.location": "Location",
+  "items.date": "Date",
+  "items.status": "Status",
+  
+  "status.active": "Active",
+  "status.matched": "Matched",
+  "status.claimed": "Claimed",
+  "status.returned": "Returned",
+  
+  "actions.search": "Search",
+  "actions.filter": "Filter",
+  "actions.clear": "Clear",
+  "actions.submit": "Submit",
+  "actions.cancel": "Cancel",
+  "actions.save": "Save",
+  "actions.edit": "Edit",
+  "actions.delete": "Delete",
+  
+  "messages.no_results": "No items found matching your criteria",
+  "messages.loading": "Loading...",
+  "messages.success": "Operation completed successfully",
+  "messages.error": "An error occurred",
+  
+  "verification.title": "Identity Verification",
+  "verification.description": "Verify your identity to access all features and build trust within the community",
+  "verification.required": "Verification Required"
+}

@@ -29,14 +29,14 @@ import RewardsSystem from './components/RewardsSystem/RewardsSystem'
 import EnhancedChatSystem from './components/ChatSystem/EnhancedChatSystem'
 import LocationMap from './components/LocationMap/LocationMap'
 import './App.css'
-
+// fuction
 function App() {
   return (
     <ThemeProvider>
       <LanguageProvider>
         <AuthProvider>
           <NotificationProvider>
-            <Router>
+            <Router future={{ v7_relativeSplatPath: true }}>
               <div className="App">
                 <Navbar />
                 <main className="main-content">
@@ -99,7 +99,6 @@ function App() {
                         </ProtectedRoute>
                       } 
                     />
-                    {/* authority */}
                     <Route 
                       path="/authority-reporting" 
                       element={

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNotification } from '../../contexts/NotificationContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { itemsAPI } from '../../services/api';
 import './ReportLost.css';
 
 const ReportLost = () => {
@@ -107,6 +108,17 @@ const ReportLost = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!user) {
+      addNotification({
+        title: 'Authentication Required',
+        message: 'Please log in to report a lost item.',
+        type: 'error'
+      });
+      navigate('/login');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -116,15 +128,15 @@ const ReportLost = () => {
       // Create FormData
       const formDataToSend = new FormData();
       
-      // Append basic fields (simpler structure)
+      // Append basic fields
       formDataToSend.append('title', formData.title);
       formDataToSend.append('category', formData.category);
       formDataToSend.append('description', formData.description);
       formDataToSend.append('dateLostFound', formData.dateLostFound);
-      formDataToSend.append('type', 'lost');
+      formDataToSend.append('status', 'lost'); // 'lost' or 'found'
       formDataToSend.append('contactPreference', formData.contactPreference);
-      formDataToSend.append('distinctiveFeatures', formData.distinctiveFeatures);
-      formDataToSend.append('rewardAmount', formData.reward.amount);
+      formDataToSend.append('distinctiveFeatures', formData.distinctiveFeatures || '');
+      formDataToSend.append('rewardAmount', formData.reward.amount || 0);
 
       // Append location as individual fields
       formDataToSend.append('address', formData.location.address);
@@ -132,55 +144,24 @@ const ReportLost = () => {
       formDataToSend.append('state', formData.location.state);
 
       // Append features as individual fields
-      formDataToSend.append('color', formData.features.color);
-      formDataToSend.append('brand', formData.features.brand);
-      formDataToSend.append('model', formData.features.model);
+      formDataToSend.append('color', formData.features.color || '');
+      formDataToSend.append('brand', formData.features.brand || '');
+      formDataToSend.append('model', formData.features.model || '');
 
-      // Append images
-      selectedImages.forEach((image, index) => {
-        formDataToSend.append('images', image);
-      });
+      // Append first image (single image upload via 'image' field)
+      if (selectedImages.length > 0) {
+        formDataToSend.append('image', selectedImages[0]);
+      }
 
       // Log FormData contents for debugging
       for (let [key, value] of formDataToSend.entries()) {
-        console.log(`📋 ${key}:`, value);
+        console.log(`📋 ${key}:`, value instanceof File ? `${value.name} (${value.size} bytes)` : value);
       }
 
-      const token = localStorage.getItem('token');
-      console.log('🔑 Token:', token ? 'Exists' : 'Missing');
-
-      if (!token) {
-        throw new Error('No authentication token found. Please log in again.');
-      }
-
-      const response = await fetch('http://localhost:5001/api/items', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-          // Note: Don't set Content-Type for FormData - let browser set it with boundary
-        },
-        body: formDataToSend
-      });
-
-      console.log('📡 Response status:', response.status);
+      // Use itemsAPI from api.js (automatically handles auth token and Content-Type)
+      const response = await itemsAPI.createItem(formDataToSend);
       
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ Server error response:', errorText);
-        
-        let errorMessage = `Server responded with ${response.status}`;
-        try {
-          const errorData = JSON.parse(errorText);
-          errorMessage = errorData.message || errorMessage;
-        } catch (e) {
-          errorMessage = errorText || errorMessage;
-        }
-        
-        throw new Error(errorMessage);
-      }
-
-      const data = await response.json();
-      console.log('✅ Success response:', data);
+      console.log('✅ Success response:', response.data);
 
       addNotification({
         title: 'Success! 🎉',
@@ -206,9 +187,10 @@ const ReportLost = () => {
 
     } catch (error) {
       console.error('❌ Submission error:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Please check your connection and try again.';
       addNotification({
         title: 'Submission Failed',
-        message: error.message || 'Please check your connection and try again.',
+        message: errorMessage,
         type: 'error'
       });
     } finally {

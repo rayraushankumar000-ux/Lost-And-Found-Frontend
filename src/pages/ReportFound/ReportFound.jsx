@@ -1,49 +1,86 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNotification } from '../../contexts/NotificationContext';
+import { useAuth } from '../../contexts/AuthContext';
+import { itemsAPI } from '../../services/api';
 import './ReportFound.css';
 
 const ReportFound = () => {
   const [formData, setFormData] = useState({
-    itemName: '',
+    title: '',
     category: '',
     description: '',
-    locationFound: '',
-    dateFound: '',
-    timeFound: '',
+    location: {
+      address: '',
+      city: '',
+      state: ''
+    },
+    dateLostFound: '',
     color: '',
     brand: '',
     model: '',
     distinctiveFeatures: '',
     storageLocation: '',
     contactPreference: 'email',
-    images: []
+    reward: { amount: 0 }
   });
 
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [selectedImages, setSelectedImages] = useState([]);
+  const [imagePreviews, setImagePreviews] = useState([]);
 
   const navigate = useNavigate();
   const { addNotification } = useNotification();
+  const { user } = useAuth();
 
   const categories = [
-    'Electronics',
-    'Documents',
-    'Jewelry',
-    'Clothing',
-    'Bags & Wallets',
-    'Keys',
-    'Pets',
-    'Other'
+    'electronics',
+    'documents', 
+    'clothing',
+    'jewelry',
+    'bags',
+    'keys',
+    'pets',
+    'other'
   ];
 
   const handleChange = (e) => {
     const { name, value, type, files } = e.target;
     
     if (type === 'file') {
+      // Handle image selection
+      if (files && files.length > 0) {
+        const imageFiles = Array.from(files).slice(0, 5); // Limit to 5 images
+        setSelectedImages(imageFiles);
+        
+        // Create preview URLs
+        const previews = imageFiles.map(file => URL.createObjectURL(file));
+        setImagePreviews(previews);
+      }
+    } else if (name.startsWith('location.')) {
+      const field = name.split('.')[1];
       setFormData(prev => ({
         ...prev,
-        images: Array.from(files)
+        location: {
+          ...prev.location,
+          [field]: value
+        }
+      }));
+    } else if (name.startsWith('features.')) {
+      const field = name.split('.')[1];
+      setFormData(prev => ({
+        ...prev,
+        [field]: value // Store directly as color, brand, model
+      }));
+    } else if (name.startsWith('reward.')) {
+      const field = name.split('.')[1];
+      setFormData(prev => ({
+        ...prev,
+        reward: {
+          ...prev.reward,
+          [field]: value
+        }
       }));
     } else {
       setFormData(prev => ({
@@ -63,25 +100,102 @@ const ReportFound = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!user) {
+      addNotification({
+        title: 'Authentication Required',
+        message: 'Please log in to report a found item.',
+        type: 'error'
+      });
+      navigate('/login');
+      return;
+    }
+
     setLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      // Create FormData
+      const formDataToSend = new FormData();
+      
+      // Append basic fields
+      formDataToSend.append('title', formData.title);
+      formDataToSend.append('category', formData.category);
+      formDataToSend.append('description', formData.description);
+      formDataToSend.append('dateLostFound', formData.dateLostFound);
+      formDataToSend.append('status', 'found'); // 'found' status
+      formDataToSend.append('contactPreference', formData.contactPreference);
+      formDataToSend.append('distinctiveFeatures', formData.distinctiveFeatures || '');
+      formDataToSend.append('rewardAmount', formData.reward.amount || 0);
+
+      // Append location as individual fields
+      formDataToSend.append('address', formData.location.address);
+      formDataToSend.append('city', formData.location.city || '');
+      formDataToSend.append('state', formData.location.state || '');
+
+      // Append features as individual fields
+      formDataToSend.append('color', formData.color || '');
+      formDataToSend.append('brand', formData.brand || '');
+      formDataToSend.append('model', formData.model || '');
+
+      // Append first image (single image upload via 'image' field)
+      if (selectedImages.length > 0) {
+        formDataToSend.append('image', selectedImages[0]);
+      }
+
+      // Use itemsAPI from api.js
+      const response = await itemsAPI.createItem(formDataToSend);
+      
       addNotification({
-        title: 'Report Submitted',
+        title: 'Success! 🎉',
         message: 'Thank you for reporting the found item!'
       });
-      setLoading(false);
+      
+      // Reset form
+      setFormData({
+        title: '',
+        category: '',
+        description: '',
+        location: { address: '', city: '', state: '' },
+        dateLostFound: '',
+        color: '',
+        brand: '',
+        model: '',
+        distinctiveFeatures: '',
+        storageLocation: '',
+        contactPreference: 'email',
+        reward: { amount: 0 }
+      });
+      setSelectedImages([]);
+      setImagePreviews([]);
+      
       navigate('/dashboard');
-    }, 2000);
+
+    } catch (error) {
+      console.error('Submission error:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Please check your connection and try again.';
+      addNotification({
+        title: 'Submission Failed',
+        message: errorMessage,
+        type: 'error'
+      });
+    } finally {
+      setLoading(false);
+    }
   };
+
+  // Clean up image preview URLs when component unmounts
+  React.useEffect(() => {
+    return () => {
+      imagePreviews.forEach(preview => URL.revokeObjectURL(preview));
+    };
+  }, [imagePreviews]);
 
   const isStepValid = () => {
     switch (currentStep) {
       case 1:
-        return formData.itemName && formData.category && formData.description;
+        return formData.title && formData.category && formData.description;
       case 2:
-        return formData.locationFound && formData.dateFound;
+        return formData.location.address && formData.dateLostFound;
       case 3:
         return true; // Optional fields
       default:
@@ -118,12 +232,13 @@ const ReportFound = () => {
               <label className="form-label">Item Name *</label>
               <input
                 type="text"
-                name="itemName"
-                value={formData.itemName}
+                name="title"
+                value={formData.title}
                 onChange={handleChange}
                 className="form-input"
                 placeholder="e.g., iPhone 13, Wallet, Keys"
                 required
+                disabled={loading}
               />
             </div>
 
@@ -135,10 +250,13 @@ const ReportFound = () => {
                 onChange={handleChange}
                 className="form-input"
                 required
+                disabled={loading}
               >
                 <option value="">Select Category</option>
                 {categories.map(category => (
-                  <option key={category} value={category}>{category}</option>
+                  <option key={category} value={category}>
+                    {category.charAt(0).toUpperCase() + category.slice(1)}
+                  </option>
                 ))}
               </select>
             </div>
@@ -153,11 +271,12 @@ const ReportFound = () => {
                 placeholder="Describe the item in detail..."
                 rows="4"
                 required
+                disabled={loading}
               />
             </div>
 
             <div className="form-group">
-              <label className="form-label">Upload Images</label>
+              <label className="form-label">Upload Images (Optional)</label>
               <div className="upload-area">
                 <input
                   type="file"
@@ -165,6 +284,7 @@ const ReportFound = () => {
                   accept="image/*"
                   onChange={handleChange}
                   className="file-input"
+                  disabled={loading}
                 />
                 <div className="upload-placeholder">
                   <span className="upload-icon">📷</span>
@@ -172,9 +292,21 @@ const ReportFound = () => {
                   <span className="upload-hint">Max 5 images, 5MB each</span>
                 </div>
               </div>
-              {formData.images.length > 0 && (
+              {selectedImages.length > 0 && (
                 <div className="upload-preview">
-                  <span>{formData.images.length} image(s) selected</span>
+                  <span>{selectedImages.length} image(s) selected</span>
+                  <div className="image-previews">
+                    {imagePreviews.map((preview, index) => (
+                      <div key={index} className="image-preview">
+                        <img 
+                          src={preview} 
+                          alt={`Preview ${index + 1}`}
+                          className="preview-image"
+                        />
+                        <span className="image-name">{selectedImages[index].name}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -184,41 +316,58 @@ const ReportFound = () => {
         {currentStep === 2 && (
           <div className="form-step">
             <div className="form-group">
-              <label className="form-label">Location Found *</label>
+              <label className="form-label">Address Where Found *</label>
               <input
                 type="text"
-                name="locationFound"
-                value={formData.locationFound}
+                name="location.address"
+                value={formData.location.address}
                 onChange={handleChange}
                 className="form-input"
-                placeholder="e.g., Central Park, Downtown Mall"
+                placeholder="e.g., 123 Main Street, Central Park"
                 required
+                disabled={loading}
               />
             </div>
 
             <div className="form-row">
               <div className="form-group">
-                <label className="form-label">Date Found *</label>
+                <label className="form-label">City</label>
                 <input
-                  type="date"
-                  name="dateFound"
-                  value={formData.dateFound}
+                  type="text"
+                  name="location.city"
+                  value={formData.location.city}
                   onChange={handleChange}
                   className="form-input"
-                  required
+                  placeholder="e.g., New York"
+                  disabled={loading}
                 />
               </div>
 
               <div className="form-group">
-                <label className="form-label">Time Found</label>
+                <label className="form-label">State</label>
                 <input
-                  type="time"
-                  name="timeFound"
-                  value={formData.timeFound}
+                  type="text"
+                  name="location.state"
+                  value={formData.location.state}
                   onChange={handleChange}
                   className="form-input"
+                  placeholder="e.g., NY"
+                  disabled={loading}
                 />
               </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Date Found *</label>
+              <input
+                type="date"
+                name="dateLostFound"
+                value={formData.dateLostFound}
+                onChange={handleChange}
+                className="form-input"
+                required
+                disabled={loading}
+              />
             </div>
 
             <div className="form-group">
@@ -288,6 +437,7 @@ const ReportFound = () => {
                 className="form-input form-textarea"
                 placeholder="Scratches, stickers, engravings, or other identifying marks..."
                 rows="3"
+                disabled={loading}
               />
             </div>
 
@@ -301,6 +451,7 @@ const ReportFound = () => {
                     value="email"
                     checked={formData.contactPreference === 'email'}
                     onChange={handleChange}
+                    disabled={loading}
                   />
                   <span className="radio-custom"></span>
                   Email
@@ -312,29 +463,38 @@ const ReportFound = () => {
                     value="phone"
                     checked={formData.contactPreference === 'phone'}
                     onChange={handleChange}
+                    disabled={loading}
                   />
                   <span className="radio-custom"></span>
                   Phone
                 </label>
-                <label className="radio-label">
-                  <input
-                    type="radio"
-                    name="contactPreference"
-                    value="both"
-                    checked={formData.contactPreference === 'both'}
-                    onChange={handleChange}
-                  />
-                  <span className="radio-custom"></span>
-                  Both
-                </label>
               </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Reward Amount (Optional)</label>
+              <input
+                type="number"
+                name="reward.amount"
+                value={formData.reward.amount}
+                onChange={handleChange}
+                className="form-input"
+                placeholder="0"
+                min="0"
+                disabled={loading}
+              />
             </div>
           </div>
         )}
 
         <div className="form-actions">
           {currentStep > 1 && (
-            <button type="button" className="btn btn-outline" onClick={handlePrevStep}>
+            <button 
+              type="button" 
+              className="btn btn-outline" 
+              onClick={handlePrevStep}
+              disabled={loading}
+            >
               Previous
             </button>
           )}
@@ -344,7 +504,7 @@ const ReportFound = () => {
               type="button" 
               className="btn btn-primary"
               onClick={handleNextStep}
-              disabled={!isStepValid()}
+              disabled={!isStepValid() || loading}
             >
               Next
             </button>
@@ -352,7 +512,7 @@ const ReportFound = () => {
             <button 
               type="submit" 
               className="btn btn-primary"
-              disabled={loading}
+              disabled={loading || !isStepValid()}
             >
               {loading ? (
                 <>

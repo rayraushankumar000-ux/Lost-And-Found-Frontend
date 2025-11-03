@@ -4,6 +4,7 @@ import { AuthProvider } from './contexts/AuthContext'
 import { NotificationProvider } from './contexts/NotificationContext'
 import { LanguageProvider } from './contexts/LanguageContext'
 import { ThemeProvider } from './contexts/ThemeContext'
+import { DashboardProvider } from './contexts/DashboardContext'
 import Navbar from './components/Navbar/Navbar'
 import Footer from './components/Footer/Footer'
 import Home from './pages/Home/Home'
@@ -36,7 +37,8 @@ function App() {
       <LanguageProvider>
         <AuthProvider>
           <NotificationProvider>
-            <Router future={{ v7_relativeSplatPath: true }}>
+            <DashboardProvider>
+              <Router future={{ v7_relativeSplatPath: true }}>
               <div className="App">
                 <Navbar />
                 <main className="main-content">
@@ -181,6 +183,7 @@ function App() {
                 <Footer />
               </div>
             </Router>
+            </DashboardProvider>
           </NotificationProvider>
         </AuthProvider>
       </LanguageProvider>

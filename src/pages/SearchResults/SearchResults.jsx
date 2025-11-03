@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { itemsAPI } from '../../services/api';
 import AdvancedSearch from '../../components/AdvancedSearch/AdvancedSearch';
 import ChatModal from '../../components/ChatModal/ChatModal';
 import './SearchResults.css';
@@ -8,6 +9,7 @@ import './SearchResults.css';
 const SearchResults = () => {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [selectedItem, setSelectedItem] = useState(null);
   const [isChatModalOpen, setIsChatModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
@@ -17,103 +19,78 @@ const SearchResults = () => {
 
   const searchFilters = location.state?.filters || {};
 
-  // Sample data - in real app, this would come from API
-  const sampleResults = [
-    {
-      id: 1,
-      type: 'lost',
-      itemName: 'iPhone 13 Pro',
-      category: 'Electronics',
-      description: 'Silver iPhone 13 Pro with black case. Lost near Central Park.',
-      location: 'Central Park',
-      date: '2024-01-15',
-      color: 'Silver',
-      brand: 'Apple',
-      images: [],
-      contact: 'john@example.com',
-      status: 'active'
-    },
-    {
-      id: 2,
-      type: 'found',
-      itemName: 'Wallet',
-      category: 'Bags & Wallets',
-      description: 'Black leather wallet found with credit cards and ID.',
-      location: 'Downtown Mall',
-      date: '2024-01-14',
-      color: 'Black',
-      brand: 'Unknown',
-      images: [],
-      contact: 'sarah@example.com',
-      status: 'active'
-    },
-    {
-      id: 3,
-      type: 'lost',
-      itemName: 'Keys',
-      category: 'Keys',
-      description: 'Set of 3 keys with blue keychain.',
-      location: 'Main Street',
-      date: '2024-01-13',
-      color: 'Silver',
-      brand: 'Unknown',
-      images: [],
-      contact: 'mike@example.com',
-      status: 'active'
-    },
-    {
-      id: 4,
-      type: 'found',
-      itemName: 'Watch',
-      category: 'Jewelry',
-      description: 'Gold wristwatch found in restaurant.',
-      location: 'City Restaurant',
-      date: '2024-01-12',
-      color: 'Gold',
-      brand: 'Rolex',
-      images: [],
-      contact: 'admin@restaurant.com',
-      status: 'active'
-    }
-  ];
-
   useEffect(() => {
-    // Simulate API call with filters
-    setTimeout(() => {
-      let filteredResults = sampleResults;
+    let mounted = true;
 
-      // Apply filters
-      if (searchFilters.category) {
-        filteredResults = filteredResults.filter(item => 
-          item.category === searchFilters.category
-        );
+    const fetchResults = async () => {
+      setLoading(true);
+      setError('');
+      try {
+        const params = {};
+        if (searchFilters.keywords) params.q = searchFilters.keywords;
+        if (searchFilters.category) params.category = searchFilters.category;
+        if (searchFilters.status && searchFilters.status !== 'all') {
+          params.status = searchFilters.status;
+        }
+        if (searchFilters.near) params.near = searchFilters.near;
+
+        const res = await itemsAPI.searchItems(params);
+        const items = res.data?.data || res.data?.items || [];
+        const mapped = items.map(it => ({
+          id: it._id,
+          type: (it.status || 'lost').toLowerCase() === 'found' ? 'found' : 'lost',
+          itemName: it.title || it.description || 'Item',
+          category: it.category || 'Other',
+          description: it.description || '',
+          location: it.location?.address || [it.location?.city, it.location?.state].filter(Boolean).join(', ') || 'Unknown',
+          date: (it.dateLostFound || it.createdAt || '').toString().slice(0,10),
+          color: it.features?.color || it.color || '',
+          brand: it.features?.brand || it.brand || 'Unknown',
+          images: it.images || [],
+          contact: it.reporter?.email || '',
+          status: it.status || 'active'
+        }));
+        // Apply client-side filters to ensure correctness
+        let filtered = mapped;
+        if (searchFilters.category) {
+          const cat = String(searchFilters.category).toLowerCase();
+          filtered = filtered.filter(x => String(x.category || '').toLowerCase() === cat);
+        }
+        if (searchFilters.status && searchFilters.status !== 'all') {
+          const st = String(searchFilters.status).toLowerCase();
+          filtered = filtered.filter(x => x.type === st);
+        }
+        if (searchFilters.location) {
+          const loc = String(searchFilters.location).toLowerCase();
+          filtered = filtered.filter(x => String(x.location || '').toLowerCase().includes(loc));
+        }
+        if (searchFilters.date) {
+          const dt = String(searchFilters.date);
+          filtered = filtered.filter(x => String(x.date || '').slice(0,10) === dt);
+        }
+        if (searchFilters.keywords) {
+          const kw = String(searchFilters.keywords).toLowerCase();
+          filtered = filtered.filter(x =>
+            String(x.itemName || '').toLowerCase().includes(kw) ||
+            String(x.description || '').toLowerCase().includes(kw) ||
+            String(x.color || '').toLowerCase().includes(kw) ||
+            String(x.brand || '').toLowerCase().includes(kw)
+          );
+        }
+        if (mounted) setResults(filtered);
+      } catch (err) {
+        if (mounted) {
+          setError(err?.message || 'Failed to fetch results');
+          setResults([]);
+        }
+      } finally {
+        if (mounted) setLoading(false);
       }
+    };
 
-      if (searchFilters.location) {
-        filteredResults = filteredResults.filter(item =>
-          item.location.toLowerCase().includes(searchFilters.location.toLowerCase())
-        );
-      }
+    fetchResults();
 
-      if (searchFilters.status && searchFilters.status !== 'all') {
-        filteredResults = filteredResults.filter(item =>
-          item.type === searchFilters.status
-        );
-      }
-
-      if (searchFilters.keywords) {
-        const keywords = searchFilters.keywords.toLowerCase();
-        filteredResults = filteredResults.filter(item =>
-          item.itemName.toLowerCase().includes(keywords) ||
-          item.description.toLowerCase().includes(keywords) ||
-          item.color.toLowerCase().includes(keywords) ||
-          item.brand.toLowerCase().includes(keywords)
-        );
-      }
-
-      setResults(filteredResults);
-      setLoading(false);
-    }, 1000);
+    return () => { mounted = false; };
   }, [searchFilters]);
 
   const handleContact = (item) => {
@@ -140,6 +117,21 @@ const SearchResults = () => {
           <div className="loading-container">
             <div className="loading-spinner"></div>
             <p>Searching for items...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="search-results">
+        <div className="container">
+          <div className="no-results">
+            <div className="no-results-icon">⚠️</div>
+            <h3>Unable to load results</h3>
+            <p>{error}</p>
+            <button className="btn btn-outline" onClick={() => window.location.reload()}>Retry</button>
           </div>
         </div>
       </div>

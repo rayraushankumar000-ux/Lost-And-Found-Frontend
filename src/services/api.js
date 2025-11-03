@@ -1,13 +1,11 @@
 import axios from 'axios';
 
-<<<<<<< HEAD
 const API = axios.create({
-  baseURL: 'https://lost-and-found-backend-1-igk1.onrender.com' // Backend port
+  baseURL: 'https://lost-and-found-backend-krax.vercel.app/api' // Backend port
+
 });
-=======
 // Get base URL from environment variable or use default
-const BASE_API_URL = import.meta.env.VITE_BASE_API_URL || 'http://localhost:4000/api';
->>>>>>> cde9ef6 (Your commit message)
+const BASE_API_URL = "https://lost-and-found-backend-krax.vercel.app/api";
 
 const api = axios.create({
   baseURL: BASE_API_URL,
@@ -127,8 +125,9 @@ export const adminAPI = {
   getDashboardStats: () => api.get('/admin/dashboard')
 };
 
-<<<<<<< HEAD
-export default API;
-=======
+// Dashboard API methods (for user dashboard)
+export const dashboardAPI = {
+  getStats: () => api.get('/admin/user-dashboard')
+};
+
 export default api;
->>>>>>> cde9ef6 (Your commit message)

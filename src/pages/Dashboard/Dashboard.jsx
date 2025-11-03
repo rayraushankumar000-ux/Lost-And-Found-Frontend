@@ -1,21 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNotification } from '../../contexts/NotificationContext';
+import { useDashboard } from '../../contexts/DashboardContext';
 import './Dashboard.css';
 
 const Dashboard = () => {
   const { user } = useAuth();
   const { addNotification } = useNotification();
-  const [stats, setStats] = useState({
-    lostItems: 0,
-    foundItems: 0,
-    matches: 0,
-    successfulReturns: 0
-  });
-
-  const [recentActivity, setRecentActivity] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { stats, recentActivity, loading } = useDashboard();
 
   const [quickActions] = useState([
     {
@@ -47,37 +40,6 @@ const Dashboard = () => {
       color: '#8b5cf6'
     }
   ]);
-
-  useEffect(() => {
-    // Simulate loading data
-    setTimeout(() => {
-      setStats({
-        lostItems: 2,
-        foundItems: 1,
-        matches: 1,
-        successfulReturns: 1
-      });
-
-      setRecentActivity([
-        {
-          id: 1,
-          type: 'lost',
-          item: 'iPhone 13',
-          date: '2024-01-15',
-          status: 'active'
-        },
-        {
-          id: 2,
-          type: 'found',
-          item: 'Wallet',
-          date: '2024-01-14',
-          status: 'matched'
-        }
-      ]);
-      
-      setLoading(false);
-    }, 1000);
-  }, []);
 
   const getStatusColor = (status) => {
     switch (status) {

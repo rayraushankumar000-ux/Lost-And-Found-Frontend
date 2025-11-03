@@ -151,20 +151,9 @@ const Navbar = () => {
               )}
 
               <div className="nav-user">
-                <Link 
-                  to="/profile" 
-                  className="user-profile"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                >
-                  <div className="user-avatar">
-                    {user?.name?.charAt(0) || 'U'}
-                  </div>
-                  <span>{user?.name}</span>
-                </Link>
                 {unreadCount > 0 && (
                   <div className="notification-badge">{unreadCount}</div>
                 )}
-                
                 <button onClick={handleLogout} className="logout-btn">
                   Logout
                 </button>

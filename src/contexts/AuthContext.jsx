@@ -151,7 +151,7 @@ export const AuthProvider = ({ children }) => {
         throw new Error(response.data?.message || 'Registration failed');
       }
 
-      const newUser = response.data.data;
+      const newUser = response.data.data; 
       
       if (!newUser || !newUser.token) {
         console.error('❌ No token in response:', response.data);

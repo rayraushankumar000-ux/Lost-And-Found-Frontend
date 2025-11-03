@@ -13,14 +13,14 @@ const AdvancedSearch = () => {
   });
 
   const categories = [
-    'Electronics',
-    'Documents',
-    'Jewelry',
-    'Clothing',
-    'Bags & Wallets',
-    'Keys',
-    'Pets',
-    'Other'
+    { value: 'electronics', label: 'Electronics' },
+    { value: 'documents', label: 'Documents' },
+    { value: 'jewelry', label: 'Jewelry' },
+    { value: 'clothing', label: 'Clothing' },
+    { value: 'bags', label: 'Bags & Wallets' },
+    { value: 'keys', label: 'Keys' },
+    { value: 'pets', label: 'Pets' },
+    { value: 'other', label: 'Other' }
   ];
 
   const handleFilterChange = (field, value) => {
@@ -59,8 +59,8 @@ const AdvancedSearch = () => {
               className="form-input"
             >
               <option value="">All Categories</option>
-              {categories.map(category => (
-                <option key={category} value={category}>{category}</option>
+              {categories.map(c => (
+                <option key={c.value} value={c.value}>{c.label}</option>
               ))}
             </select>
           </div>
